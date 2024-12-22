@@ -63,15 +63,15 @@ def makemove(grid, lastloc, currdir):
     return False
 
 def checkmove2(grid, lastloc, currdir, movelist):
-    print('-'*50)
+    #print('-'*50)
     currloc  = [lastloc[0]+currdir[0], lastloc[1]+currdir[1]]
     lastcell = grid[lastloc[0]][lastloc[1]]
     currcell = grid[currloc[0]][currloc[1]]
-    print('lastloc=%s' % str(lastloc))
-    print('lastcell=%s' % lastcell)
-    print('currloc=%s' % str(currloc))
-    print('currcell=%s' % currcell)
-    print('movelist:%s' % str(movelist))
+    #print('lastloc=%s' % str(lastloc))
+    #print('lastcell=%s' % lastcell)
+    #print('currloc=%s' % str(currloc))
+    #print('currcell=%s' % currcell)
+    #print('movelist:%s' % str(movelist))
     if currcell == '.':
         # make move
         if currdir[1] == 0:
@@ -167,13 +167,13 @@ def makemoves2(grid, moves):
         currdir  = parsedirection(currmove)
         movelist = []
         if checkmove2(grid, currloc, currdir, movelist):
-            print('final movelist: %s' % str(movelist))
+            #print('final movelist: %s' % str(movelist))
             commitmoves(grid, movelist)
             grid[currloc[0]][currloc[1]] = '.'
             currloc  = [currloc[0]+currdir[0], currloc[1]+currdir[1]]
 
-        print('Move %s:' % currmove)
-        printgrid(grid)
+        #print('Move %s:' % currmove)
+        #printgrid(grid)
         #input()
 
 def calcsum(grid):
@@ -243,9 +243,9 @@ with open('day15.txt') as fptr:
 
 grid, moves = parsedata(data)
 newgrid = doublegrid(grid)
-#makemoves(grid, moves)
-#count = calcsum(grid)
-#print('part1: %i' % count)
+makemoves(grid, moves)
+count = calcsum(grid)
+print('part1: %i' % count)
 makemoves2(newgrid, moves)
 count = calcsum2(newgrid)
 print('part2: %i' % count)

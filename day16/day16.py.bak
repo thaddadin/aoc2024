@@ -1,0 +1,136 @@
+from colorama import Fore, Back, Style
+
+def printgrid(grid):
+
+    [print(''.join(map(str, row))) for row in grid]
+
+def printpath(grid, path):
+
+    nrow = len(grid)
+    ncol = len(grid[0])
+
+    for ii in range(nrow):
+        for jj in range(ncol):
+            if (jj == ncol-1):
+                pend = '\n'
+            else:
+                pend = ''
+
+            if [ii, jj] in path:
+                print(Fore.RED + grid[ii][jj] + Style.RESET_ALL, end=pend)
+            else:
+                print(grid[ii][jj], end=pend)
+
+def parsedata(data):
+
+    grid = [list(row) for row in data.strip().split('\n')]
+
+    return grid
+
+def findstart(grid):
+
+    nrow = len(grid)
+    ncol = len(grid[0])
+
+    for ii in range(nrow):
+        for jj in range(ncol):
+            if grid[ii][jj] == 'S':
+                return [ii, jj]
+
+def makestep(grid, checked, path, diridx, currcost):
+    print('makestep()')
+    
+    dirs = [[-1, +0], # up
+            [+0, +1], # right
+            [+1, +0], # down
+            [+0, -1]] # left
+
+    ndir = len(dirs)
+    nrow = len(grid)
+    ncol = len(grid[0])
+    
+    currloc   = path[-1]
+    currcell  = grid[currloc[0]][currloc[1]]
+    currcheck = checked[currloc[0]][currloc[1]]
+
+    if currcell == 'E':
+        # reached end, return currcost
+        print('reach end')
+        return currcost
+    elif currcell == '#':
+        # hit wall, return -1 to backup
+        print('hit wall')
+        checked[currloc[0]][currloc[1]] = 1
+        if path:
+            checked[path[-1][0]][path[-1][1]] = 0
+            path.pop()
+        return -1
+    elif (currcheck == 1):
+        # hit check cell, return -1 to backup
+        print('hit check cell')
+        checked[currloc[0]][currloc[1]] = 1
+        if path:
+            checked[path[-1][0]][path[-1][1]] = 0
+            path.pop()
+        return -1
+    else:
+        print('continue...')
+        checked[currloc[0]][currloc[1]] = 1
+        newpaths = [[pp for pp in path] for _ in range(ndir)]
+        mincost  = None
+        minidx   = 0
+        for dd in range(ndir):
+
+            # update direction
+            currdiridx = (diridx + dd) % ndir
+            currdir    = dirs[currdiridx]
+
+            print('currloc: %s' % str(currloc))
+            print('currdir: %s' % str(currdir))
+
+            # get next location
+            nextloc    = [currloc[0]+currdir[0], currloc[1]+currdir[1]]
+
+            newpaths[dd].append(nextloc)
+
+            # make next step
+            newcost = makestep(grid, checked, newpaths[dd], currdiridx, currcost+1+dd*1000)
+
+            if (mincost is None) or ((newcost < mincost) and (newcost != -1)):
+                mincost = newcost
+                minidx  = dd
+
+        path = newpaths[minidx]
+        #print('path: %s' % str(path))
+        #print('mincost: %i' % mincost)
+        #printgrid(checked)
+        #printpath(grid, path)
+        #input()
+    
+        if mincost == -1:
+            if path:
+                checked[path[-1][0]][path[-1][1]] = 0
+                path.pop()
+            return -1
+        
+        return mincost
+
+def findpath(grid):
+
+    path   = [findstart(grid)]
+    
+    diridx = 1
+
+    nrow        = len(grid)
+    ncol        = len(grid[0])
+    checked     = [[0 for _ in range(ncol)] for _ in range(nrow)]
+    
+    cost        = makestep(grid, checked, path, diridx, 0)
+
+    return cost, path
+
+with open('test16.txt') as fptr:
+    data = fptr.read()
+
+grid = parsedata(data)
+cost, path = findpath(grid)

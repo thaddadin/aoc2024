@@ -1,5 +1,10 @@
 from colorama import Fore, Back, Style
+def printdirs(dirsgrid, path):
 
+    for currpath in path:
+
+        print('[%i, %i] = %s'  % (currpath[0], currpath[1], dirsgrid[currpath[0]][currpath[1]]))
+        
 def printdirscount(dirsgrid):
 
     nrow = len(dirsgrid)
@@ -21,7 +26,7 @@ def printcost(grid):
     nrow = len(grid)
     ncol = len(grid[0])
     maxcost = nrow * ncol * 2000
-    lmax = 4#len(str(maxcost))
+    lmax = 5#len(str(maxcost))
     for ii in range(nrow):
         for jj in range(ncol):
             if (jj == ncol-1):
@@ -103,6 +108,12 @@ def createdirs(grid, startloc, endloc):
                                       [+0, -1]] # left
     return lastgrid
 
+def createcount(grid):
+    nrow = len(grid)
+    ncol = len(grid[0])
+    countgrid = [[0 for _ in range(ncol)] for _ in range(nrow)]
+    return countgrid
+
 def calcrotation(indir, outdirs):
     
     dirs = [[-1, +0], # up
@@ -121,13 +132,9 @@ def calcrotation(indir, outdirs):
 
     minrot = min(rotation)
 
-    #minidxs = [idx for idx, val in enumerate(rotation) if val == minrot]
-
-    #mindirs = [outdirs[minidx] for minidx in minidxs]
-
     return minrot
 
-def calcstep(grid, costgrid, dirsgrid, currloc, updatedloc):
+def calcstep(grid, costgrid, countgrid, dirsgrid, currloc, updatedloc, ddoffset=0):
     
     dirs = [[-1, +0], # up
             [+0, +1], # right
@@ -142,22 +149,27 @@ def calcstep(grid, costgrid, dirsgrid, currloc, updatedloc):
     currdirs = dirsgrid[currloc[0]][currloc[1]]
 
     for dd in range(ndir):
-        loopdir  = dirs[dd]
+        loopdir  = dirs[(dd+ddoffset) % ndir]
         backdir  = [loopdir[0]*(-1), loopdir[1]*(-1)]
         prevloc  = [currloc[0]+backdir[0], currloc[1]+backdir[1]]
         prevcell = grid[prevloc[0]][prevloc[1]]
         
         if (prevcell == '.') or (prevcell == 'S'):
             rotation = calcrotation(loopdir, currdirs)
-            prevcost = currcost + stepcost + rotation * rotcost
+            newcost = currcost + rotation * rotcost
+            prevcost = newcost + stepcost
             
             if prevcost < costgrid[prevloc[0]][prevloc[1]]:
                 costgrid[prevloc[0]][prevloc[1]] = prevcost
+                #costgrid[currloc[0]][currloc[1]] = newcost
                 dirsgrid[prevloc[0]][prevloc[1]] = [loopdir]
+                countgrid[prevloc[0]][prevloc[1]] = 1
                 if (not (prevloc in updatedloc)) and (prevcell != 'S'):
                     updatedloc.append(prevloc)
             elif prevcost == costgrid[prevloc[0]][prevloc[1]]:
+                #costgrid[currloc[0]][currloc[1]] = newcost
                 dirsgrid[prevloc[0]][prevloc[1]].append(loopdir)
+                countgrid[prevloc[0]][prevloc[1]] += 1
                 if (not (prevloc in updatedloc)) and (prevcell != 'S'):
                     updatedloc.append(prevloc)
 
@@ -165,25 +177,65 @@ def calcstep(grid, costgrid, dirsgrid, currloc, updatedloc):
 
 def backstep(grid):
 
-    endloc   = findend(grid)
-    startloc = findstart(grid)
-    costgrid = createcosts(grid, endloc)
-    dirsgrid = createdirs(grid, startloc, endloc)
+    endloc    = findend(grid)
+    startloc  = findstart(grid)
+    costgrid  = createcosts(grid, endloc)
+    dirsgrid  = createdirs(grid, startloc, endloc)
+    countgrid = createcount(grid)
     
     updatedloc = [endloc]
     while (updatedloc):
 
         currloc = updatedloc.pop(0)
-        calcstep(grid, costgrid, dirsgrid, currloc, updatedloc)
+        calcstep(grid, costgrid, countgrid, dirsgrid, currloc, updatedloc, 3)
 
-    printcost(costgrid)
     # because you start the puzzle pointing right)
     lastrot = calcrotation([0, 1], dirsgrid[startloc[0]][startloc[1]])
     cost    = costgrid[startloc[0]][startloc[1]] + lastrot * 1000
 
-    printdirscount(dirsgrid)
+    path = findpath(costgrid, startloc, endloc)
+
+    #printcost(costgrid)
+    #printgrid(countgrid)
+    #printdirscount(dirsgrid)
+    printpath(grid, path)
+    #printdirs(dirsgrid, path)
 
     return cost
+
+def findpath(costgrid, startloc, endloc):
+    
+    dirs = [[-1, +0], # up
+            [+0, +1], # right
+            [+1, +0], # down
+            [+0, -1]] # left
+    ndir = len(dirs)
+
+    nrow = len(grid)
+    ncol = len(grid[0])
+
+    path = [startloc]
+    while path[-1] != endloc:
+        #print(path[-1])
+        currloc = path[-1]
+
+        mincost = nrow*ncol*2000
+        minloc  = None
+
+        for dd in range(ndir):
+
+            currdir  = dirs[dd]
+            testloc  = [currloc[0]+currdir[0], currloc[1]+currdir[1]]
+            testcost = costgrid[testloc[0]][testloc[1]]
+
+            if testcost < mincost:
+                mincost = testcost
+                minloc  = testloc
+
+        path.append(minloc)
+        #print('path=%s' % str(path))
+
+    return path
 
 with open('test16.txt') as fptr:
     data = fptr.read()
